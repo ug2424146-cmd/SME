@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/../app/helpers/session.php";
-require_role(["admin", "manager"]);
+require_auth();
 $user = current_user();
+$isManagerOrAdmin = in_array($user["role"], ["admin", "manager"], true);
 ?>
 <!doctype html>
 <html lang="en">
@@ -10,8 +11,8 @@ $user = current_user();
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Reports Center - SME Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?= e(url('../assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
+    <link href="<?php echo url("assets/vendor/bootstrap.min.css"); ?>" rel="stylesheet">
+    <link href="<?= e(url('assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
     <style>
         body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%) !important; }
         .card { border-radius: 12px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; border: none !important; }
@@ -126,19 +127,19 @@ $user = current_user();
         <div class="page-header">
             <div class="container">
                 <h1>Reports Center</h1>
-                <p>Generate and download system reports</p>
+                <p><?= $isManagerOrAdmin ? "Generate and download system reports" : "Download your task and performance reports" ?></p>
             </div>
         </div>
 
         <main class="container py-4">
-<div class="card mb-3"><div class="card-body"><h2 class="h6">Task Progress Report</h2>
+<div class="card mb-3"><div class="card-body"><h2 class="h6"><?= $isManagerOrAdmin ? "Task Progress Report" : "My Task Report" ?></h2>
 <form method="get" action="<?= e(url('reports.php')) ?>" class="row g-2">
 <input type="hidden" name="type" value="task_progress">
 <div class="col-md-4"><select class="form-select" name="status"><option value="">All statuses</option><option value="pending">Pending</option><option value="in_progress">In Progress</option><option value="completed">Completed</option></select></div>
 <div class="col-md-3"><select class="form-select" name="format"><option value="csv">CSV</option><option value="excel">Excel</option><option value="pdf">PDF/Print</option></select></div>
 <div class="col-md-2"><button class="btn btn-primary w-100">Generate</button></div>
 </form></div></div>
-<div class="card"><div class="card-body"><h2 class="h6">Performance Report</h2>
+<div class="card"><div class="card-body"><h2 class="h6"><?= $isManagerOrAdmin ? "Performance Report" : "My Performance Report" ?></h2>
 <form method="get" action="<?= e(url('reports.php')) ?>" class="row g-2">
 <input type="hidden" name="type" value="performance">
 <div class="col-md-3"><select class="form-select" name="format"><option value="csv">CSV</option><option value="excel">Excel</option><option value="pdf">PDF/Print</option></select></div>
@@ -146,7 +147,7 @@ $user = current_user();
 </form></div></div>
 </main></div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo url("assets/vendor/bootstrap.bundle.min.js"); ?>"></script>
 <script>
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -157,3 +158,4 @@ function toggleSidebar() {
 </script>
 </body>
 </html>
+

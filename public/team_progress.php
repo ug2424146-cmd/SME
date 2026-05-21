@@ -2,28 +2,84 @@
 declare(strict_types=1);
 require_once __DIR__ . "/../app/helpers/session.php";
 require_once __DIR__ . "/../config/database.php";
+require_once __DIR__ . "/../app/controllers/TeamProgressController.php";
+
 require_role(["manager", "admin"]);
 $user = current_user();
+$controller = new TeamProgressController();
 
 $departmentId = (int) ($_GET["department_id"] ?? 0);
+$redirectQs = $departmentId > 0 ? "?department_id=" . $departmentId : "";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    if (!verify_csrf_token($_POST["csrf_token"] ?? null)) {
+        flash("error", "Invalid CSRF token.");
+    } else {
+        $action = (string) ($_POST["action"] ?? "");
+        if ($action === "assign_department") {
+            $controller->assignToDepartment($_POST, (int) $user["id"]);
+        } elseif ($action === "remove_department") {
+            $controller->removeFromDepartment($_POST, (int) $user["id"]);
+        } else {
+            flash("error", "Unsupported action.");
+        }
+    }
+    header("Location: " . url("team_progress.php") . $redirectQs);
+    exit;
+}
+
 $departments = $mysqli->query("SELECT id, department_name FROM departments ORDER BY department_name ASC")->fetch_all(MYSQLI_ASSOC);
 
-$sql = "SELECT u.name AS employee,
-               d.department_name,
+$employees = [];
+$empRes = $mysqli->query(
+    "SELECT u.id, u.name
+     FROM users u
+     LEFT JOIN roles r ON r.id = u.role_id
+     WHERE COALESCE(r.role_name, u.role) = 'employee'
+     ORDER BY u.name ASC"
+);
+while ($row = $empRes->fetch_assoc()) {
+    $employees[] = $row;
+}
+
+$sqlInner = "SELECT u.id,
+               u.name AS employee,
+               GROUP_CONCAT(DISTINCT d.department_name ORDER BY d.department_name SEPARATOR ', ') AS department_names,
                COUNT(t.id) AS total_tasks,
-               SUM(CASE WHEN t.status='completed' THEN 1 ELSE 0 END) AS completed_tasks,
-               ROUND((SUM(CASE WHEN t.status='completed' THEN 1 ELSE 0 END) / NULLIF(COUNT(t.id),0)) * 100, 2) AS completion_rate
+               SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS completed_tasks,
+               ROUND(
+                   (SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) / NULLIF(COUNT(t.id), 0)) * 100,
+                   2
+               ) AS completion_rate
         FROM users u
-        INNER JOIN roles r ON r.id = u.role_id AND r.role_name='employee'
+        LEFT JOIN roles r ON r.id = u.role_id
         LEFT JOIN user_departments ud ON ud.user_id = u.id
         LEFT JOIN departments d ON d.id = ud.department_id
         LEFT JOIN tasks t ON t.assigned_to = u.id
-        WHERE 1=1";
+        WHERE COALESCE(r.role_name, u.role) = 'employee'";
 if ($departmentId > 0) {
-    $sql .= " AND d.id = " . $departmentId;
+    $sqlInner .= " AND EXISTS (
+        SELECT 1 FROM user_departments udf
+        WHERE udf.user_id = u.id AND udf.department_id = ?
+    )";
 }
-$sql .= " GROUP BY u.id, u.name, d.department_name ORDER BY completion_rate DESC, u.name ASC";
-$rows = $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
+$sqlInner .= " GROUP BY u.id, u.name";
+$sql = "SELECT tp.id, tp.employee, tp.department_names, tp.total_tasks, tp.completed_tasks, tp.completion_rate
+        FROM (" . $sqlInner . ") AS tp
+        ORDER BY (tp.completion_rate IS NULL) ASC, tp.completion_rate DESC, tp.employee ASC";
+
+if ($departmentId > 0) {
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("i", $departmentId);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+} else {
+    $rows = $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
+}
+
+$successMessage = get_flash("success");
+$errorMessage = get_flash("error");
 ?>
 <!doctype html>
 <html lang="en">
@@ -31,8 +87,8 @@ $rows = $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Team Progress - SME Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?= e(url('../assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
+    <link href="<?php echo url("assets/vendor/bootstrap.min.css"); ?>" rel="stylesheet">
+    <link href="<?= e(url('assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
     <style>
         body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%) !important; }
         .card { border-radius: 12px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; border: none !important; }
@@ -152,11 +208,136 @@ $rows = $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
         </div>
 
         <main class="container py-4">
-<form method="get" class="row g-2 mb-3"><div class="col-md-6"><select class="form-select" name="department_id"><option value="0">All departments</option><?php foreach($departments as $d): ?><option value="<?= (int)$d["id"] ?>" <?= $departmentId === (int)$d["id"] ? "selected" : "" ?>><?= e($d["department_name"]) ?></option><?php endforeach; ?></select></div><div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div></form>
-<table class="table table-sm bg-white"><thead><tr><th>Employee</th><th>Department</th><th>Total</th><th>Completed</th><th>Completion %</th></tr></thead><tbody><?php foreach($rows as $r): ?><tr><td><?= e($r["employee"]) ?></td><td><?= e((string)$r["department_name"]) ?></td><td><?= e((string)$r["total_tasks"]) ?></td><td><?= e((string)$r["completed_tasks"]) ?></td><td><?= e((string)$r["completion_rate"]) ?></td></tr><?php endforeach; ?></tbody></table>
-</main></div></div>
+            <?php if ($successMessage): ?>
+                <div class="alert alert-success"><?= e($successMessage) ?></div>
+            <?php endif; ?>
+            <?php if ($errorMessage): ?>
+                <div class="alert alert-danger"><?= e($errorMessage) ?></div>
+            <?php endif; ?>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <strong>Team &amp; departments</strong>
+                    <span class="text-white-50 small ms-2">Put employees on a department so filters and reporting stay accurate.</span>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($departments)): ?>
+                        <p class="text-muted mb-0">Create departments first (Admin → Departments), then assign employees here.</p>
+                    <?php elseif (empty($employees)): ?>
+                        <p class="text-muted mb-0">No employee accounts yet. Add users with the Employee role.</p>
+                    <?php else: ?>
+                        <div class="row g-3">
+                            <div class="col-lg-6">
+                                <h3 class="h6 text-muted text-uppercase">Add to department</h3>
+                                <form method="post" class="row g-2 align-items-end">
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                    <input type="hidden" name="action" value="assign_department">
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-0">Employee</label>
+                                        <select class="form-select" name="user_id" required>
+                                            <?php foreach ($employees as $e): ?>
+                                                <option value="<?= (int) $e["id"] ?>"><?= e((string) $e["name"]) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small mb-0">Department</label>
+                                        <select class="form-select" name="department_id" required>
+                                            <?php foreach ($departments as $d): ?>
+                                                <option value="<?= (int) $d["id"] ?>"><?= e((string) $d["department_name"]) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-success w-100">Add</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-lg-6">
+                                <h3 class="h6 text-muted text-uppercase">Remove from department</h3>
+                                <form method="post" class="row g-2 align-items-end">
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                    <input type="hidden" name="action" value="remove_department">
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-0">Employee</label>
+                                        <select class="form-select" name="user_id" required>
+                                            <?php foreach ($employees as $e): ?>
+                                                <option value="<?= (int) $e["id"] ?>"><?= e((string) $e["name"]) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small mb-0">Department</label>
+                                        <select class="form-select" name="department_id" required>
+                                            <?php foreach ($departments as $d): ?>
+                                                <option value="<?= (int) $d["id"] ?>"><?= e((string) $d["department_name"]) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-outline-danger w-100">Remove</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <form method="get" class="row g-2 mb-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label small text-muted mb-0">Filter by department</label>
+                    <select class="form-select" name="department_id">
+                        <option value="0">All departments</option>
+                        <?php foreach ($departments as $d): ?>
+                            <option value="<?= (int) $d["id"] ?>" <?= $departmentId === (int) $d["id"] ? "selected" : "" ?>>
+                                <?= e((string) $d["department_name"]) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+
+            <div class="table-responsive shadow-sm rounded overflow-hidden">
+                <table class="table table-sm table-striped bg-white mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department(s)</th>
+                            <th class="text-end">Total tasks</th>
+                            <th class="text-end">Completed</th>
+                            <th class="text-end">Completion %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($rows as $r): ?>
+                            <?php
+                            $deptLabel = trim((string) ($r["department_names"] ?? ""));
+                            if ($deptLabel === "") {
+                                $deptLabel = "—";
+                            }
+                            $total = (int) $r["total_tasks"];
+                            $completed = (int) $r["completed_tasks"];
+                            $rate = $r["completion_rate"];
+                            $rateLabel = $total === 0 ? "—" : ($rate !== null ? (string) $rate : "—");
+                            ?>
+                            <tr>
+                                <td><?= e((string) $r["employee"]) ?></td>
+                                <td><span class="text-muted"><?= e($deptLabel) ?></span></td>
+                                <td class="text-end"><?= $total ?></td>
+                                <td class="text-end"><?= $completed ?></td>
+                                <td class="text-end"><?= e($rateLabel) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+<script src="<?php echo url("assets/vendor/bootstrap.bundle.min.js"); ?>"></script>
 <script>
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -167,3 +348,4 @@ function toggleSidebar() {
 </script>
 </body>
 </html>
+

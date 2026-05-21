@@ -36,8 +36,8 @@ $errorMessage = get_flash("error");
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Settings - SME Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?= e(url('../assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
+    <link href="<?php echo url("assets/vendor/bootstrap.min.css"); ?>" rel="stylesheet">
+    <link href="<?= e(url('assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
     <style>
         body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%) !important; }
         .card { border-radius: 12px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; border: none !important; }
@@ -161,7 +161,7 @@ $errorMessage = get_flash("error");
 <table class="table table-sm bg-white"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody><?php foreach($settings as $s): ?><tr><td><?= e($s["setting_key"]) ?></td><td><?= e((string)$s["setting_value"]) ?></td></tr><?php endforeach; ?></tbody></table>
 </main></div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo url("assets/vendor/bootstrap.bundle.min.js"); ?>"></script>
 <script>
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -172,3 +172,4 @@ function toggleSidebar() {
 </script>
 </body>
 </html>
+

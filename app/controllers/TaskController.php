@@ -97,6 +97,33 @@ class TaskController
             return;
         }
 
+        // Validate that employee has the required skill if one is specified
+        if ($requiredSkillId > 0) {
+            $skillCheck = $mysqli->prepare(
+                "SELECT es.id
+                 FROM employee_skills es
+                 WHERE es.user_id = ? AND es.skill_id = ?
+                 LIMIT 1"
+            );
+            $skillCheck->bind_param("ii", $assignedTo, $requiredSkillId);
+            $skillCheck->execute();
+            $employeeHasSkill = $skillCheck->get_result()->fetch_assoc();
+            $skillCheck->close();
+
+            if (!$employeeHasSkill) {
+                // Get skill name for error message
+                $skillNameStmt = $mysqli->prepare("SELECT skill_name FROM skills WHERE id = ? LIMIT 1");
+                $skillNameStmt->bind_param("i", $requiredSkillId);
+                $skillNameStmt->execute();
+                $skillRow = $skillNameStmt->get_result()->fetch_assoc();
+                $skillNameStmt->close();
+                $skillName = $skillRow ? $skillRow["skill_name"] : "unknown skill";
+
+                flash("error", "Selected employee does not have the required skill: " . $skillName);
+                return;
+            }
+        }
+
         $deadlineValue = $deadline !== "" ? $deadline : null;
         $stmt = $mysqli->prepare(
             "INSERT INTO tasks (title, description, assigned_to, assigned_by, required_skill_id, priority, status, deadline)

@@ -35,8 +35,8 @@ $errorMessage = get_flash("error");
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Notifications - SME Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?= e(url('../assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
+    <link href="<?php echo url("assets/vendor/bootstrap.min.css"); ?>" rel="stylesheet">
+    <link href="<?= e(url('assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
     <style>
         body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%) !important; }
         .card { border-radius: 12px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; border: none !important; }
@@ -163,7 +163,7 @@ $errorMessage = get_flash("error");
 <table class="table table-sm bg-white"><thead><tr><th>Title</th><th>Message</th><th>Status</th><th>Date</th><th>Action</th></tr></thead><tbody><?php foreach($notifications as $n): ?><tr><td><?= e($n["title"]) ?></td><td><?= e($n["message"]) ?></td><td><?= (int)$n["is_read"]===1 ? "Read" : "Unread" ?></td><td><?= e($n["created_at"]) ?></td><td><form method="post" class="d-inline"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="id" value="<?= (int)$n["id"] ?>"><input type="hidden" name="is_read" value="<?= (int)$n["is_read"]===1 ? "0" : "1" ?>"><button class="btn btn-sm btn-outline-primary"><?= (int)$n["is_read"]===1 ? "Mark Unread" : "Mark Read" ?></button></form></td></tr><?php endforeach; ?></tbody></table>
 </main></div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo url("assets/vendor/bootstrap.bundle.min.js"); ?>"></script>
 <script>
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -184,3 +184,4 @@ setInterval(async () => {
 </script>
 </body>
 </html>
+
