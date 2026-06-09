@@ -51,3 +51,5 @@ Run `database.sql` to create all required and advanced tables:
 
 - Run syntax checks: `Get-ChildItem -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }`
 - Run smoke test: `php tests/smoke.php`
+"# SME" 
+"# SME" 

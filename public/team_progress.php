@@ -138,23 +138,28 @@ $errorMessage = get_flash("error");
             <div class="sidebar-user-role"><?= e($user["role"]) ?></div>
         </div>
         <nav class="sidebar-nav">
-            <div class="sidebar-section">Main Menu</div>
-            <a href="<?= e(url('dashboard.php')) ?>" class="sidebar-link">
-                <span class="sidebar-link-icon">📊</span>
-                <span>Dashboard</span>
-            </a>
-            <a href="<?= e(url('tasks.php')) ?>" class="sidebar-link">
-                <span class="sidebar-link-icon">📋</span>
-                <span>Tasks</span>
-            </a>
-            <a href="<?= e(url('skills.php')) ?>" class="sidebar-link">
-                <span class="sidebar-link-icon">🎯</span>
-                <span>Skills</span>
-            </a>
-            <a href="<?= e(url('performance.php')) ?>" class="sidebar-link">
-                <span class="sidebar-link-icon">⭐</span>
-                <span>Performance</span>
-            </a>
+            <div class="sidebar-section d-flex align-items-center">
+                <span class="me-2">☰</span>
+                <span>Main Menu</span>
+            </div>
+            <div class="main-menu-row">
+                <a href="<?= e(url('dashboard.php')) ?>" class="main-menu-item">
+                    <span class="icon">📊</span>
+                    <span class="label">Dashboard</span>
+                </a>
+                <a href="<?= e(url('tasks.php')) ?>" class="main-menu-item">
+                    <span class="icon">📋</span>
+                    <span class="label">Tasks</span>
+                </a>
+                <a href="<?= e(url('skills.php')) ?>" class="main-menu-item">
+                    <span class="icon">🎯</span>
+                    <span class="label">Skills</span>
+                </a>
+                <a href="<?= e(url('performance.php')) ?>" class="main-menu-item">
+                    <span class="icon">⭐</span>
+                    <span class="label">Performance</span>
+                </a>
+            </div>
             <div class="sidebar-section mt-4">Management</div>
             <a href="<?= e(url('team_progress.php')) ?>" class="sidebar-link active">
                 <span class="sidebar-link-icon">👥</span>
