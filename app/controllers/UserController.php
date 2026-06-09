@@ -84,12 +84,18 @@ class UserController
     {
         $userId = (int) ($data["user_id"] ?? 0);
         $name = trim((string) ($data["name"] ?? ""));
+        $email = trim((string) ($data["email"] ?? ""));
         $role = (string) ($data["role"] ?? "employee");
         $newPassword = (string) ($data["password"] ?? "");
         $isActive = isset($data["is_active"]) ? (int) $data["is_active"] : 1;
 
-        if ($userId <= 0 || $name === "") {
+        if ($userId <= 0 || $name === "" || $email === "") {
             flash("error", "Invalid user update data.");
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            flash("error", "Invalid email address.");
             return;
         }
 
@@ -98,6 +104,17 @@ class UserController
         }
 
         global $mysqli;
+        $checkStmt = $mysqli->prepare("SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1");
+        $checkStmt->bind_param("si", $email, $userId);
+        $checkStmt->execute();
+        $existing = $checkStmt->get_result()->fetch_assoc();
+        $checkStmt->close();
+
+        if ($existing) {
+            flash("error", "Email already exists.");
+            return;
+        }
+
         $roleData = $this->resolveRole($role);
         if (!$roleData) {
             flash("error", "Invalid role.");
@@ -112,11 +129,11 @@ class UserController
                 return;
             }
             $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
-            $stmt = $mysqli->prepare("UPDATE users SET name = ?, role_id = ?, role = ?, is_active = ?, password = ? WHERE id = ?");
-            $stmt->bind_param("sisisi", $name, $roleId, $roleName, $isActive, $hashedPassword, $userId);
+            $stmt = $mysqli->prepare("UPDATE users SET name = ?, email = ?, role_id = ?, role = ?, is_active = ?, password = ? WHERE id = ?");
+            $stmt->bind_param("ssisisi", $name, $email, $roleId, $roleName, $isActive, $hashedPassword, $userId);
         } else {
-            $stmt = $mysqli->prepare("UPDATE users SET name = ?, role_id = ?, role = ?, is_active = ? WHERE id = ?");
-            $stmt->bind_param("sisii", $name, $roleId, $roleName, $isActive, $userId);
+            $stmt = $mysqli->prepare("UPDATE users SET name = ?, email = ?, role_id = ?, role = ?, is_active = ? WHERE id = ?");
+            $stmt->bind_param("ssisii", $name, $email, $roleId, $roleName, $isActive, $userId);
         }
 
         $stmt->execute();
@@ -125,6 +142,7 @@ class UserController
         // Keep current session role/name in sync when admin updates own account.
         if ($currentUserId === $userId && isset($_SESSION["user"])) {
             $_SESSION["user"]["name"] = $name;
+            $_SESSION["user"]["email"] = $email;
             $_SESSION["user"]["role"] = $roleName;
         }
 

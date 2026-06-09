@@ -72,6 +72,41 @@ $errorMessage = get_flash("error");
         }
         .page-header h1 { font-weight: 800 !important; font-size: 2.25rem !important; margin: 0 !important; }
         .table thead th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; }
+        .settings-card .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .settings-card .card-header p {
+            color: rgba(255,255,255,0.82);
+            font-size: 0.9rem;
+            margin: 0.25rem 0 0;
+            font-weight: 400;
+        }
+        .settings-table {
+            margin-bottom: 0;
+        }
+        .settings-table td,
+        .settings-table th {
+            padding: 1rem 1.25rem;
+            vertical-align: middle;
+        }
+        .setting-key {
+            color: #1f2937;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-weight: 700;
+        }
+        .setting-value {
+            color: #4b5563;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .empty-settings {
+            color: #6b7280;
+            padding: 2.5rem 1rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -150,15 +185,84 @@ $errorMessage = get_flash("error");
         <div class="page-header">
             <div class="container">
                 <h1>System Settings</h1>
-                <p>Configure application settings</p>
+                <p>Manage application configuration values used across the platform.</p>
             </div>
         </div>
 
         <main class="container py-4">
 <?php if ($successMessage): ?><div class="alert alert-success"><?= e($successMessage) ?></div><?php endif; ?>
 <?php if ($errorMessage): ?><div class="alert alert-danger"><?= e($errorMessage) ?></div><?php endif; ?>
-<form method="post" class="row g-2 mb-3"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><div class="col-md-4"><input class="form-control" name="setting_key" placeholder="setting_key"></div><div class="col-md-6"><input class="form-control" name="setting_value" placeholder="setting_value"></div><div class="col-md-2"><button class="btn btn-primary w-100">Save</button></div></form>
-<table class="table table-sm bg-white"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody><?php foreach($settings as $s): ?><tr><td><?= e($s["setting_key"]) ?></td><td><?= e((string)$s["setting_value"]) ?></td></tr><?php endforeach; ?></tbody></table>
+            <div class="card settings-card mb-4">
+                <div class="card-header">
+                    <div>
+                        <div>Add or Update Setting</div>
+                        <p>Use clear keys such as app.name, notifications.email_enabled, or reports.retention_days.</p>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" class="row g-3 align-items-end">
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                        <div class="col-lg-4">
+                            <label class="form-label fw-semibold" for="setting_key">Setting Key</label>
+                            <input
+                                class="form-control"
+                                id="setting_key"
+                                name="setting_key"
+                                placeholder="app.name"
+                                maxlength="120"
+                                required
+                            >
+                            <div class="form-text">Unique identifier used by the application.</div>
+                        </div>
+                        <div class="col-lg-6">
+                            <label class="form-label fw-semibold" for="setting_value">Setting Value</label>
+                            <textarea
+                                class="form-control"
+                                id="setting_value"
+                                name="setting_value"
+                                placeholder="SME Platform"
+                                rows="1"
+                            ></textarea>
+                            <div class="form-text">Enter the value exactly as it should be stored.</div>
+                        </div>
+                        <div class="col-lg-2">
+                            <button class="btn btn-primary w-100" type="submit">Save Setting</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card settings-card">
+                <div class="card-header">
+                    <div>
+                        <div>Current Settings</div>
+                        <p><?= count($settings) ?> configuration <?= count($settings) === 1 ? "entry" : "entries" ?> available.</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover settings-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Setting Key</th>
+                                <th scope="col">Current Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!$settings): ?>
+                                <tr>
+                                    <td colspan="2" class="empty-settings">No system settings have been configured yet.</td>
+                                </tr>
+                            <?php endif; ?>
+                            <?php foreach($settings as $s): ?>
+                                <tr>
+                                    <td class="setting-key"><?= e($s["setting_key"]) ?></td>
+                                    <td class="setting-value"><?= e((string)$s["setting_value"]) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 </main></div></div>
 
 <script src="<?php echo url("assets/vendor/bootstrap.bundle.min.js"); ?>"></script>

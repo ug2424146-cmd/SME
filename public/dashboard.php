@@ -81,10 +81,30 @@ $currentPage = 'dashboard';
 
 ob_start();
 ?>
+<style>
+    .stat-card-link {
+        color: inherit;
+        display: block;
+        text-decoration: none;
+    }
+    .stat-card-link:hover,
+    .stat-card-link:focus {
+        color: inherit;
+        text-decoration: none;
+    }
+    .stat-card-link:focus-visible {
+        outline: 3px solid rgba(102, 126, 234, 0.45);
+        outline-offset: 4px;
+    }
+    .stat-card-link .stat-card {
+        cursor: pointer;
+    }
+</style>
 <?php if ($user["role"] === "admin"): ?>
     <!-- ADMIN DASHBOARD -->
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('users.php')) ?>" class="stat-card-link h-100" aria-label="View total users">
             <div class="stat-card animate-slide-up h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -96,8 +116,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('users.php')) ?>" class="stat-card-link h-100" aria-label="View active users">
             <div class="stat-card success animate-slide-up-delay-1 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -109,8 +131,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('departments.php')) ?>" class="stat-card-link h-100" aria-label="View departments">
             <div class="stat-card warning animate-slide-up-delay-2 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -122,8 +146,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('skills.php')) ?>" class="stat-card-link h-100" aria-label="View total skills">
             <div class="stat-card info animate-slide-up-delay-3 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -135,6 +161,7 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
     </div>
 
@@ -277,6 +304,7 @@ ob_start();
     <!-- MANAGER DASHBOARD -->
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('team_progress.php')) ?>" class="stat-card-link h-100" aria-label="View team members">
             <div class="stat-card animate-slide-up h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -288,8 +316,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('tasks.php')) ?>" class="stat-card-link h-100" aria-label="View pending tasks">
             <div class="stat-card warning animate-slide-up-delay-1 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -301,8 +331,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('tasks.php')) ?>" class="stat-card-link h-100" aria-label="View completed tasks">
             <div class="stat-card success animate-slide-up-delay-2 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -314,8 +346,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('team_progress.php')) ?>" class="stat-card-link h-100" aria-label="View average completion">
             <div class="stat-card info animate-slide-up-delay-3 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -327,6 +361,7 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
     </div>
 
@@ -453,6 +488,7 @@ ob_start();
     <!-- EMPLOYEE DASHBOARD -->
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('tasks.php')) ?>" class="stat-card-link h-100" aria-label="View total tasks">
             <div class="stat-card animate-slide-up h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -464,8 +500,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('skills.php')) ?>" class="stat-card-link h-100" aria-label="View my skills">
             <div class="stat-card success animate-slide-up-delay-1 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -477,8 +515,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('performance.php')) ?>" class="stat-card-link h-100" aria-label="View average rating">
             <div class="stat-card warning animate-slide-up-delay-2 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -490,8 +530,10 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
+            <a href="<?= e(url('tasks.php')) ?>" class="stat-card-link h-100" aria-label="View completed tasks">
             <div class="stat-card info animate-slide-up-delay-3 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -503,6 +545,7 @@ ob_start();
                     </div>
                 </div>
             </div>
+            </a>
         </div>
     </div>
 
