@@ -1,0 +1,21 @@
+echo name: 🚀 Deploy to InfinityFree via FTP > .github\workflows\deploy.yml
+echo. >> .github\workflows\deploy.yml
+echo on: >> .github\workflows\deploy.yml
+echo   push: >> .github\workflows\deploy.yml
+echo     branches: >> .github\workflows\deploy.yml
+echo       - main >> .github\workflows\deploy.yml
+echo. >> .github\workflows\deploy.yml
+echo jobs: >> .github\workflows\deploy.yml
+echo   ftp-deploy: >> .github\workflows\deploy.yml
+echo     runs-on: ubuntu-latest >> .github\workflows\deploy.yml
+echo     steps: >> .github\workflows\deploy.yml
+echo       - name: 📥 Checkout code >> .github\workflows\deploy.yml
+echo         uses: actions/checkout@v3 >> .github\workflows\deploy.yml
+echo. >> .github\workflows\deploy.yml
+echo       - name: 📤 FTP Deploy >> .github\workflows\deploy.yml
+echo         uses: SamKirkland/FTP-Deploy-Action@v4.3.5 >> .github\workflows\deploy.yml
+echo         with: >> .github\workflows\deploy.yml
+echo           server: ${{ secrets.FTP_HOST }} >> .github\workflows\deploy.yml
+echo           username: ${{ secrets.FTP_USERNAME }} >> .github\workflows\deploy.yml
+echo           password: ${{ secrets.FTP_PASSWORD }} >> .github\workflows\deploy.yml
+echo           server-dir: ${{ secrets.FTP_TARGET_FOLDER }} >> .github\workflows\deploy.yml
