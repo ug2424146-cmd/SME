@@ -53,7 +53,8 @@ if ($user["role"] === "admin") {
     $roleStats["recent_tasks"] = $mysqli->query("SELECT t.title, t.status, u.name as assignee, t.created_at FROM tasks t JOIN users u ON t.assigned_to = u.id WHERE u.role = 'employee' ORDER BY t.created_at DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
     
 } else {
-    // Employee stats
+    // Employee stats - use system-computed rating
+    require_once __DIR__ . "/../app/helpers/app.php";
     $roleStats["total_tasks"] = $mysqli->prepare("SELECT COUNT(*) as count FROM tasks WHERE assigned_to = ?");
     $roleStats["total_tasks"]->bind_param("i", $user["id"]);
     $roleStats["total_tasks"]->execute();
@@ -64,10 +65,9 @@ if ($user["role"] === "admin") {
     $roleStats["my_skills"]->execute();
     $roleStats["my_skills"] = $roleStats["my_skills"]->get_result()->fetch_assoc()["count"];
     
-    $roleStats["avg_rating"] = $mysqli->prepare("SELECT ROUND(AVG(rating), 2) as avg FROM performance WHERE user_id = ?");
-    $roleStats["avg_rating"]->bind_param("i", $user["id"]);
-    $roleStats["avg_rating"]->execute();
-    $roleStats["avg_rating"] = $roleStats["avg_rating"]->get_result()->fetch_assoc()["avg"] ?? 0;
+    // Use system-computed rating
+    $roleStats["computed_rating"] = compute_user_rating((int) $user["id"], false);
+    $roleStats["rating_detail"] = compute_user_rating((int) $user["id"], true);
     
     $roleStats["recent_tasks"] = $mysqli->prepare("SELECT title, status, deadline, created_at FROM tasks WHERE assigned_to = ? ORDER BY created_at DESC LIMIT 5");
     $roleStats["recent_tasks"]->bind_param("i", $user["id"]);
@@ -93,7 +93,7 @@ ob_start();
         text-decoration: none;
     }
     .stat-card-link:focus-visible {
-        outline: 3px solid rgba(102, 126, 234, 0.45);
+        outline: 3px solid rgba(40, 167, 69, 0.45);
         outline-offset: 4px;
     }
     .stat-card-link .stat-card {
@@ -518,12 +518,12 @@ ob_start();
             </a>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <a href="<?= e(url('performance.php')) ?>" class="stat-card-link h-100" aria-label="View average rating">
+            <a href="<?= e(url('rating_breakdown.php')) ?>" class="stat-card-link h-100" aria-label="View my rating">
             <div class="stat-card warning animate-slide-up-delay-2 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <h3 class="mb-1 fw-bold text-warning"><?= $roleStats["avg_rating"] ?></h3>
-                        <p class="mb-0 text-muted small text-uppercase">Avg Rating</p>
+                        <h3 class="mb-1 fw-bold text-warning"><?= $roleStats["computed_rating"] ?>/5</h3>
+                        <p class="mb-0 text-muted small text-uppercase">System Rating</p>
                     </div>
                     <div class="stat-icon bg-warning bg-opacity-10 text-warning rounded-circle p-3">
                         <i class="fas fa-star"></i>
@@ -587,6 +587,51 @@ ob_start();
         </div>
         <div class="col-xl-6 col-lg-12">
             <div class="card animate-slide-up-delay-2 h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-robot me-2"></i>Your Performance Rating
+                    </div>
+                    <div>
+                        <span class="badge bg-warning bg-opacity-10 text-warning fw-bold px-3 py-2">
+                            <i class="fas fa-star me-1"></i><?= $roleStats["computed_rating"] ?>/5
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php $rd = $roleStats["rating_detail"]; ?>
+                    <p class="text-muted small mb-3">System-calculated rating based on your performance metrics:</p>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <small class="fw-semibold">Task Completion</small>
+                            <small class="text-muted"><?= $rd["completed"] ?>/<?= $rd["assigned"] ?> completed</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: <?= $rd["completion_score"] * 100 ?>%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <small class="fw-semibold">Timeliness</small>
+                            <small class="text-muted"><?= $rd["late"] ?> late task(s)</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: <?= $rd["timeliness_score"] * 100 ?>%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <small class="fw-semibold">Skill Proficiency</small>
+                            <small class="text-muted">Avg: <?= $rd["avg_proficiency"] ?>/5</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: <?= ($rd["avg_proficiency"] / 5) * 100 ?>%"></div>
+                        </div>
+                    </div>
+                    <a href="<?= e(url('rating_breakdown.php')) ?>" class="btn btn-sm btn-outline-primary mt-2">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
                         <i class="fas fa-rocket me-2"></i>Quick Actions
