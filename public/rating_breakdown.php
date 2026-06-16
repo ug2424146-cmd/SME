@@ -59,10 +59,12 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+$apiUrl = e(url('api/rating_breakdown.php'));
 $scripts = <<<HTML
 <script>
 async function loadRatingBreakdown(userId) {
-  const url = 'api/rating_breakdown.php' + (userId ? '?user_id=' + userId : '');
+  const base = "{$apiUrl}";
+  const url = base + (userId ? '?user_id=' + userId : '');
   try {
     const res = await fetch(url, { credentials: 'same-origin' });
     const data = await res.json();
