@@ -18,6 +18,26 @@ $showAll = in_array($user['role'], ['manager', 'admin'], true);
 $pageTitle = 'Rating Breakdown';
 $pageSubtitle = 'System-calculated rating components per employee';
 $currentPage = 'performance';
+
+// Get initial data for display
+$initialRows = [];
+if (in_array($user['role'], ['manager', 'admin'], true)) {
+    $initialRows = $mysqli->query("SELECT u.id, u.name FROM users u INNER JOIN roles r ON r.id=u.role_id WHERE r.role_name='employee' ORDER BY u.name")->fetch_all(MYSQLI_ASSOC) ?: [];
+} else {
+    $initialRows = [['id' => (int)$user['id'], 'name' => $user['name']]];
+}
+
+// Prepare initial data with ratings
+$initialData = [];
+foreach ($initialRows as $emp) {
+    $ratingDetail = compute_user_rating((int)$emp['id'], true);
+    $initialData[] = [
+        'id' => $emp['id'],
+        'name' => $emp['name'],
+        'detail' => $ratingDetail
+    ];
+}
+
 ob_start();
 ?>
 <div class="card border-0 shadow-sm rounded-2xl mb-4">
@@ -58,7 +78,21 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="6" class="text-center text-muted">Loading…</td></tr>
+                    <?php if (empty($initialData)): ?>
+                        <tr><td colspan="6" class="text-center text-muted">No employees found</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($initialData as $row): ?>
+                            <?php $d = $row['detail']; ?>
+                            <tr>
+                                <td><?= e($row['name']) ?></td>
+                                <td><?= (int)$d['assigned'] ?></td>
+                                <td><?= (int)$d['completed'] ?></td>
+                                <td><?= (int)$d['late'] ?></td>
+                                <td><?= round((float)$d['avg_proficiency'], 1) ?></td>
+                                <td class="fw-bold"><?= round((float)$d['rating'], 2) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -86,10 +120,11 @@ ob_start();
 <?php
 $content = ob_get_clean();
 $apiUrl = e(url('api/rating_breakdown.php'));
+$initialDataJson = json_encode($initialData);
 $scripts = <<<HTML
 <script>
 const API_BASE = "{$apiUrl}";
-let rbRows = [];
+let rbRows = {$initialDataJson};
 let rbSortKey = 'rating';
 let rbSortDir = -1; // -1 desc, 1 asc
 
@@ -223,8 +258,11 @@ async function openDetailModal(userId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Render initial data
+  renderTable();
   setupSorting();
-  loadRatingBreakdown();
+  
+  // Setup filter and CSV export
   const sel = document.getElementById('rb-employee-select');
   if (sel) sel.addEventListener('change', function() { loadRatingBreakdown(this.value || 0); });
   const csvBtn = document.getElementById('rb-export-csv');
@@ -233,9 +271,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Auto-execute after a short delay if DOMContentLoaded hasn't fired
 setTimeout(function() {
-  if (typeof setupSorting === 'function') {
+  if (typeof renderTable === 'function' && rbRows.length > 0) {
+    renderTable();
     setupSorting();
-    loadRatingBreakdown();
     const sel = document.getElementById('rb-employee-select');
     if (sel) sel.addEventListener('change', function() { loadRatingBreakdown(this.value || 0); });
     const csvBtn = document.getElementById('rb-export-csv');
