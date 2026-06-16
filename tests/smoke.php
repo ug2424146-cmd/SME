@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+// Ensure CLI runs detect the environment as local so local DB creds are used
+if (php_sapi_name() === 'cli') {
+    $_SERVER['SERVER_NAME'] = 'localhost';
+}
+
 require_once __DIR__ . "/../config/database.php";
 
 $checks = [
