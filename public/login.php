@@ -24,25 +24,76 @@ unset($_SESSION["error"]);
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SME Platform - Login</title>
+    <link rel="icon" type="image/png" href="<?php echo url('assets/images/logo.png'); ?>">
     <link href="<?php echo url("assets/vendor/bootstrap.min.css"); ?>" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="<?php echo url('assets/css/style.css'); ?>" rel="stylesheet">
-    <link href="<?php echo url('assets/css/responsive.css'); ?>" rel="stylesheet">
+    <link href="<?php echo url('assets/vendor/all.min.css'); ?>" rel="stylesheet">
+    <link href="<?php echo url('assets/css/style.css'); ?>?v=<?php echo time(); ?>" rel="stylesheet">
+    <script>
+        (function() {
+            var saved = localStorage.getItem("sme_theme");
+            var prefers = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            var theme = saved || (prefers ? "dark" : "light");
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+                document.documentElement.setAttribute("data-theme", "dark");
+                document.documentElement.setAttribute("data-bs-theme", "dark");
+            }
+        })();
+    </script>
+    <style>
+        .login-page-wrapper {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .login-page-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background-image: url('<?php echo url('assets/images/logo.png'); ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .login-card {
+            position: relative;
+            z-index: 1;
+            background-color: var(--bs-body-bg);
+            border-radius: 16px;
+            max-width: 420px;
+            width: 100%;
+        }
+        
+        .dark .login-page-wrapper {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+    </style>
 </head>
-<body>
-    <div class="d-flex align-items-center justify-content-center min-vh-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <div class="card p-4 shadow-lg" style="max-width: 420px; width: 100%; border-radius: 24px;">
-            <div class="text-center mb-4">
-                <i class="fas fa-building fa-3x text-primary"></i>
-                <h1 class="h4 mt-3 mb-1">SME Platform</h1>
-                <p class="text-muted mb-0">Sign in to your account</p>
+<body class="login-page">
+    <div class="login-page-wrapper d-flex align-items-center justify-content-center min-vh-100">
+        <div class="login-card p-4 shadow-lg">
+            <div class="login-card-brand text-center mb-4">
+                <div class="login-brand-icon mb-3">
+                    <img src="<?php echo url('assets/images/logo.png'); ?>" alt="SME Platform" width="90" height="90" style="border-radius:22px;object-fit:cover;">
+                </div>
+                <h1 class="h4 fw-bold mb-1">SME Platform</h1>
+                <p class="text-muted mb-0">Secure access to your team dashboard</p>
             </div>
             <?php if ($error): ?>
                 <div class="alert alert-danger" role="alert">
                     <i class="fas fa-exclamation-triangle me-2"></i><?php echo e($error); ?>
                 </div>
             <?php endif; ?>
-            <form method="post" action="login.php">
+            <form method="post" action="<?php echo url('login.php'); ?>">
                 <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>">
                 <div class="mb-3">
                     <label for="email" class="form-label fw-semibold">Email Address</label>
@@ -61,10 +112,11 @@ unset($_SESSION["error"]);
                 <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
             </form>
             <div class="text-center mt-4">
-                <a href="index.php" class="text-decoration-none">Back to homepage</a>
+                <a href="<?php echo url('index.php'); ?>" class="text-decoration-none text-muted">Back to homepage</a>
             </div>
         </div>
     </div>
     <script src="<?php echo url("assets/vendor/bootstrap.bundle.min.js"); ?>"></script>
+    <script src="<?php echo url('assets/js/app.js'); ?>?v=<?php echo time(); ?>"></script>
 </body>
 </html>
