@@ -230,6 +230,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const csvBtn = document.getElementById('rb-export-csv');
   if (csvBtn) csvBtn.addEventListener('click', downloadCSV);
 });
+
+// Auto-execute after a short delay if DOMContentLoaded hasn't fired
+setTimeout(function() {
+  if (typeof setupSorting === 'function') {
+    setupSorting();
+    loadRatingBreakdown();
+    const sel = document.getElementById('rb-employee-select');
+    if (sel) sel.addEventListener('change', function() { loadRatingBreakdown(this.value || 0); });
+    const csvBtn = document.getElementById('rb-export-csv');
+    if (csvBtn) csvBtn.addEventListener('click', downloadCSV);
+  }
+}, 100);
 </script>
 HTML;
 require_once __DIR__ . '/../app/views/layouts/main.php';
