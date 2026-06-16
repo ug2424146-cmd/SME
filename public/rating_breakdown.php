@@ -15,13 +15,6 @@ $employees = $mysqli->query("SELECT u.id, u.name FROM users u INNER JOIN roles r
 
 $showAll = in_array($user['role'], ['manager', 'admin'], true);
 
-$rows = [];
-foreach ($employees as $e) {
-    if (!$showAll && $e['id'] !== $user['id']) continue;
-    $d = compute_user_rating((int)$e['id'], true);
-    $rows[] = ['id' => $e['id'], 'name' => $e['name'], 'detail' => $d];
-}
-
 $pageTitle = 'Rating Breakdown';
 $pageSubtitle = 'System-calculated rating components per employee';
 $currentPage = 'performance';
@@ -32,8 +25,20 @@ ob_start();
         <h5 class="fw-bold mb-0">Rating Breakdown</h5>
     </div>
     <div class="card-body px-4 pb-4 pt-3">
+        <div class="mb-3">
+            <?php if (in_array($user['role'], ['manager','admin'], true)): ?>
+                <label class="form-label small fw-semibold text-muted">Filter Employee</label>
+                <select id="rb-employee-select" class="form-select form-select-sm mb-2">
+                    <option value="">All employees</option>
+                    <?php foreach ($employees as $e): ?>
+                        <option value="<?= (int)$e['id'] ?>"><?= e($e['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            <?php endif; ?>
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 small">
+            <table id="rb-table" class="table table-hover align-middle mb-0 small">
                 <thead class="table-light">
                     <tr>
                         <th>Employee</th>
@@ -45,16 +50,7 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($rows as $r): ?>
-                        <tr>
-                            <td><?= e($r['name']) ?></td>
-                            <td><?= (int)$r['detail']['assigned'] ?></td>
-                            <td><?= (int)$r['detail']['completed'] ?></td>
-                            <td><?= (int)$r['detail']['late'] ?></td>
-                            <td><?= e((string)$r['detail']['avg_proficiency']) ?></td>
-                            <td class="fw-bold"><?= e((string)$r['detail']['rating']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
+                    <tr><td colspan="6" class="text-center text-muted">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -63,5 +59,49 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
-$scripts = '';
+$scripts = <<<HTML
+<script>
+async function loadRatingBreakdown(userId) {
+  const url = 'api/rating_breakdown.php' + (userId ? '?user_id=' + userId : '');
+  try {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    const data = await res.json();
+    const tbody = document.querySelector('#rb-table tbody');
+    if (!data.ok) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-danger">Error: ' + (data.message||'Failed') + '</td></tr>';
+      return;
+    }
+    if (!data.rows || data.rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted">No data</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    data.rows.forEach(r => {
+      const d = r.detail || {};
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + (r.name||'Unknown') + '</td>' +
+                     '<td>' + (d.assigned||0) + '</td>' +
+                     '<td>' + (d.completed||0) + '</td>' +
+                     '<td>' + (d.late||0) + '</td>' +
+                     '<td>' + (d.avg_proficiency||0) + '</td>' +
+                     '<td class="fw-bold">' + (d.rating||0) + '</td>';
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    const tbody = document.querySelector('#rb-table tbody');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-danger">Fetch error</td></tr>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadRatingBreakdown();
+  const sel = document.getElementById('rb-employee-select');
+  if (sel) {
+    sel.addEventListener('change', function() {
+      loadRatingBreakdown(this.value || 0);
+    });
+  }
+});
+</script>
+HTML;
 require_once __DIR__ . '/../app/views/layouts/main.php';
