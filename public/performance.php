@@ -37,166 +37,146 @@ if ($user["role"] === "employee") {
 $successMessage = get_flash("success");
 $errorMessage = get_flash("error");
 $avgRating = 0;
-if (count($reviews) > 0) {
-    $sum = 0;
-    foreach ($reviews as $review) {
-        $sum += (int) $review["rating"];
+// Compute system-driven average rating across employees
+if (count($employees) > 0) {
+    $sum = 0.0;
+    foreach ($employees as $e) {
+        $sum += compute_user_rating((int) $e["id"]);
     }
-    $avgRating = round($sum / count($reviews), 2);
+    $avgRating = round($sum / count($employees), 2);
 }
+
+$pageTitle = 'Performance Reviews';
+$pageSubtitle = 'Track and manage employee performance';
+$currentPage = 'performance';
+
+ob_start();
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Performance - SME Platform</title>
-    <link href="<?php echo url("assets/vendor/bootstrap.min.css"); ?>" rel="stylesheet">
-    <link href="<?= e(url('assets/css/style.css')) ?>?v=<?= time() ?>" rel="stylesheet">
-    <style>
-        body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%) !important; }
-        .card { border-radius: 12px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; border: none !important; }
-        .card-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; font-weight: 600 !important; border-radius: 12px 12px 0 0 !important; padding: 1rem 1.5rem !important; }
-        .btn { border-radius: 8px !important; font-weight: 600 !important; padding: 0.75rem 1.5rem !important; transition: all 0.3s ease !important; }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; border: none !important; }
-        .btn-success { background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important; border: none !important; }
-        .btn-info { background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%) !important; border: none !important; }
-        .btn-warning { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important; border: none !important; }
-        .btn:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important; }
-        .sidebar { background: linear-gradient(180deg, #667eea 0%, #764ba2 100%) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important; }
-        .sidebar-brand { color: white !important; font-weight: 700 !important; }
-        .sidebar-link { color: rgba(255,255,255,0.85) !important; }
-        .sidebar-link:hover { background: rgba(255,255,255,0.15) !important; color: white !important; }
-        .sidebar-link.active { background: rgba(255,255,255,0.25) !important; color: white !important; }
-        .main-content { 
-            margin-left: 280px !important; 
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%) !important; 
-            min-height: 100vh !important; 
-            padding-top: 0 !important;
-        }
-        .main-content > main {
-            padding-top: 2rem !important;
-        }
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: white !important;
-            padding: 2.5rem 0 !important;
-            border-radius: 12px !important;
-            margin-bottom: 2rem !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-        }
-        .page-header h1 { font-weight: 800 !important; font-size: 2.25rem !important; margin: 0 !important; }
-        .table thead th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; }
-    </style>
-</head>
-<body class="bg-light">
-<div class="sidebar-wrapper">
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="<?= e(url('dashboard.php')) ?>" class="sidebar-brand">
-                🏢 SME Platform
-            </a>
-        </div>
-        <div class="sidebar-user">
-            <div class="sidebar-user-name"><?= e($user["name"]) ?></div>
-            <div class="sidebar-user-role"><?= e($user["role"]) ?></div>
-        </div>
-        <nav class="sidebar-nav">
-            <div class="sidebar-section d-flex align-items-center">
-                <span class="me-2">☰</span>
-                <span>Main Menu</span>
-            </div>
-            <div class="main-menu-row">
-                <a href="<?= e(url('dashboard.php')) ?>" class="main-menu-item">
-                    <span class="icon">📊</span>
-                    <span class="label">Dashboard</span>
-                </a>
-                <a href="<?= e(url('tasks.php')) ?>" class="main-menu-item">
-                    <span class="icon">📋</span>
-                    <span class="label">Tasks</span>
-                </a>
-                <a href="<?= e(url('skills.php')) ?>" class="main-menu-item">
-                    <span class="icon">🎯</span>
-                    <span class="label">Skills</span>
-                </a>
-                <a href="<?= e(url('performance.php')) ?>" class="main-menu-item active">
-                    <span class="icon">⭐</span>
-                    <span class="label">Performance</span>
-                </a>
-            </div>
-            <?php if ($user["role"] !== "employee"): ?>
-                <div class="sidebar-section mt-4">Management</div>
-                <a href="<?= e(url('team_progress.php')) ?>" class="sidebar-link">
-                    <span class="sidebar-link-icon">👥</span>
-                    <span>Team Progress</span>
-                </a>
-            <?php endif; ?>
-            <div class="sidebar-section mt-4">Reports</div>
-            <a href="<?= e(url('reports_center.php')) ?>" class="sidebar-link">
-                <span class="sidebar-link-icon">📈</span>
-                <span>Reports</span>
-            </a>
-            <?php if ($user["role"] === "admin"): ?>
-                <div class="sidebar-section mt-4">Administration</div>
-                <a href="<?= e(url('users.php')) ?>" class="sidebar-link">
-                    <span class="sidebar-link-icon">👤</span>
-                    <span>Users</span>
-                </a>
-                <a href="<?= e(url('departments.php')) ?>" class="sidebar-link">
-                    <span class="sidebar-link-icon">🏢</span>
-                    <span>Departments</span>
-                </a>
-                <a href="<?= e(url('settings.php')) ?>" class="sidebar-link">
-                    <span class="sidebar-link-icon">⚙️</span>
-                    <span>Settings</span>
-                </a>
-            <?php endif; ?>
-        </nav>
-        <div class="sidebar-footer">
-            <a href="<?= e(url('notifications_view.php')) ?>" class="sidebar-footer-link">
-                <span>🔔</span>
-                <span>Notifications</span>
-            </a>
-            <a href="<?= e(url('profile.php')) ?>" class="sidebar-footer-link">
-                <span>👤</span>
-                <span>My Profile</span>
-            </a>
-            <a href="<?= e(url('logout.php')) ?>" class="sidebar-footer-link">
-                <span>🚪</span>
-                <span>Logout</span>
-            </a>
-        </div>
-    </aside>
-    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰ Menu</button>
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="container">
-                <h1>Performance Reviews</h1>
-                <p>Track and manage employee performance</p>
-            </div>
-        </div>
-
-        <main class="container py-4">
-<?php if ($successMessage): ?><div class="alert alert-success"><?= e($successMessage) ?></div><?php endif; ?>
-<?php if ($errorMessage): ?><div class="alert alert-danger"><?= e($errorMessage) ?></div><?php endif; ?>
-<?php if (in_array($user["role"], ["manager", "admin"], true)): ?>
-<form method="post" class="row g-2 mb-3"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><div class="col-md-4"><select class="form-select" name="user_id" required><option value="">Select employee</option><?php foreach($employees as $e): ?><option value="<?= (int)$e["id"] ?>"><?= e($e["name"]) ?></option><?php endforeach; ?></select></div><div class="col-md-2"><input class="form-control" type="number" min="1" max="5" name="rating" placeholder="Rating"></div><div class="col-md-4"><input class="form-control" name="feedback" placeholder="Feedback"></div><div class="col-md-2"><button class="btn btn-primary w-100">Submit</button></div></form>
+<?php if ($successMessage): ?>
+    <div class="alert alert-success alert-dismissible fade show shadow-sm"><i class="fas fa-check-circle me-2"></i><?= e($successMessage) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 <?php endif; ?>
-<div class="alert alert-info">Average Rating: <?= e((string) $avgRating) ?></div>
-<table class="table table-sm bg-white"><thead><tr><th>Employee</th><th>Reviewer</th><th>Rating</th><th>Feedback</th><th>Date</th></tr></thead><tbody><?php foreach($reviews as $r): ?><tr><td><?= e($r["employee"]) ?></td><td><?= e($r["reviewer"]) ?></td><td><?= e((string)$r["rating"]) ?></td><td><?= e((string)$r["feedback"]) ?></td><td><?= e($r["review_date"]) ?></td></tr><?php endforeach; ?></tbody></table>
-</main></div></div>
+<?php if ($errorMessage): ?>
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm"><i class="fas fa-exclamation-circle me-2"></i><?= e($errorMessage) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<?php endif; ?>
 
-<script src="<?php echo url("assets/vendor/bootstrap.bundle.min.js"); ?>"></script>
-<script>
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('show');
-}
-</script>
-</body>
-</html>
+<div class="d-flex align-items-center gap-3 mb-4">
+    <div class="card border-0 shadow-sm rounded-2xl flex-1">
+        <div class="card-body p-4 d-flex align-items-center gap-3">
+            <div class="bg-primary bg-opacity-10 rounded-lg p-3">
+                <i class="fas fa-star text-primary" style="font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <span class="text-muted small fw-semibold uppercase">Average Rating</span>
+                <div class="fw-bold" style="font-size: 1.75rem; line-height: 1.2;"><?= e((string) $avgRating) ?> <span class="text-muted small fw-normal">/ 5</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="card border-0 shadow-sm rounded-2xl flex-1">
+        <div class="card-body p-4 d-flex align-items-center gap-3">
+            <div class="bg-success bg-opacity-10 rounded-lg p-3">
+                <i class="fas fa-file-alt text-success" style="font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <span class="text-muted small fw-semibold uppercase">Total Reviews</span>
+                <div class="fw-bold" style="font-size: 1.75rem; line-height: 1.2;"><?= count($reviews) ?></div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<?php if (in_array($user["role"], ["manager", "admin"], true)): ?>
+    <div class="card border-0 shadow-sm rounded-2xl mb-4">
+        <div class="card-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+            <h5 class="fw-bold mb-0"><i class="fas fa-robot text-primary me-2"></i>System-calculated Ratings</h5>
+        </div>
+        <div class="card-body px-4 pb-4 pt-3">
+            <p class="small text-muted mb-3">Ratings are automatically computed by the system based on task outcomes and skill proficiency. Manual rating submission has been disabled to ensure consistent, objective measures.</p>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="fw-semibold px-4">Employee</th>
+                            <th class="fw-semibold">Computed Rating</th>
+                            <th class="fw-semibold">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $ratings = [];
+                        foreach ($employees as $e) {
+                            $r = compute_user_rating((int)$e['id']);
+                            $ratings[] = ['id' => $e['id'], 'name' => $e['name'], 'rating' => $r];
+                        }
+                        usort($ratings, function($a, $b) { return $b['rating'] <=> $a['rating']; });
+                        foreach ($ratings as $row):
+                        ?>
+                            <tr>
+                                <td class="px-4 fw-medium"><?= e($row['name']) ?></td>
+                                <td>
+                                    <?php $rating = (float)$row['rating']; $full = floor($rating); ?>
+                                    <?php for($i = 1; $i <= 5; $i++): ?>
+                                        <i class="fas fa-star<?= $i <= $full ? ' text-warning' : ' text-muted' ?>" style="font-size: 0.75rem;"></i>
+                                    <?php endfor; ?>
+                                    <span class="ms-1 fw-bold small"><?= e((string)$rating) ?></span>
+                                </td>
+                                <td class="text-muted small">Computed from tasks and skills</td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if (empty($reviews)): ?>
+    <div class="card border-0 shadow-sm rounded-2xl">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-star text-muted" style="font-size: 2.5rem; opacity: 0.4;"></i>
+            <h6 class="fw-bold mt-3 mb-2">No Reviews Yet</h6>
+            <p class="text-muted small mb-0">Performance reviews will appear here.</p>
+        </div>
+    </div>
+<?php else: ?>
+    <div class="card border-0 shadow-sm rounded-2xl">
+        <div class="card-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+            <h5 class="fw-bold mb-0"><i class="fas fa-list text-primary me-2"></i>Review History</h5>
+        </div>
+        <div class="card-body px-4 pb-4 pt-3 p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="fw-semibold px-4">Employee</th>
+                            <th class="fw-semibold">Reviewer</th>
+                            <th class="fw-semibold">Rating</th>
+                            <th class="fw-semibold">Feedback</th>
+                            <th class="fw-semibold pe-4">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($reviews as $r): ?>
+                            <tr>
+                                <td class="px-4 fw-medium"><?= e($r["employee"]) ?></td>
+                                <td class="text-muted"><?= e($r["reviewer"]) ?></td>
+                                <td>
+                                    <?php $rating = (int)$r["rating"]; ?>
+                                    <?php for($i = 1; $i <= 5; $i++): ?>
+                                        <i class="fas fa-star<?= $i <= $rating ? ' text-warning' : ' text-muted' ?>" style="font-size: 0.75rem;"></i>
+                                    <?php endfor; ?>
+                                    <span class="ms-1 fw-bold small"><?= e((string)$r["rating"]) ?></span>
+                                </td>
+                                <td class="text-muted small"><?= e((string)$r["feedback"]) ?: '<em class="text-muted">No feedback</em>' ?></td>
+                                <td class="text-muted small pe-4"><?= e($r["review_date"]) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+<?php
+$content = ob_get_clean();
+$scripts = '';
+require_once __DIR__ . "/../app/views/layouts/main.php";
